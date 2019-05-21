@@ -10,4 +10,8 @@ class GumaMenu {
             this._items.push(new GumaMenuItem(gumaReference, texts[i], actions[i]));
 		}
 	}
+    
+    get items() {
+    	return this._items;
+    }
 }

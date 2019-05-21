@@ -54,6 +54,12 @@ class Guma {
 			this._pages.push(page);
 		}
 		
+		for (let menuItem of prismPageSet.menu.items) {
+			this._scene.add(menuItem);
+		}
+
+		this._scene.add(prismPageSet);
+
 		return prismPageSet;
 	}
 	
