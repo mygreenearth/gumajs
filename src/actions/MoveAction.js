@@ -1,9 +1,9 @@
 class MoveAction {
-	constructor(gumaReference, element, rotateSpeed, moveSpeed) {
+	constructor(gumaReference, element, moveSpeed, rotateSpeed) {
 		this._gumaReference = gumaReference;
 		this._element = element;
-		this._maxRotateSpeed = rotateSpeed || 0.04;
 		this._maxMoveSpeed = moveSpeed || 10;
+		this._maxRotateSpeed = rotateSpeed || 0.04;
 		this._task = null;
 	}
 	

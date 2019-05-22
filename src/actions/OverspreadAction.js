@@ -7,9 +7,10 @@ class OverspreadAction {
 		this._offset = offset || 10;
 		this._task = null;
 		this._hiddenItems = true;
+		this._firstRun = true;
 	}
 	
-	_update() {
+	_run() {
 		let screenWidth = window.innerWidth;
 		let fullWidth = -4 * this._offset;
 		let widthPrev = fullWidth;
@@ -70,8 +71,10 @@ class OverspreadAction {
 	            	continue;
 	            }
 
-	            entry.position.x = iter;
-	            entry.position.y = y / 2;
+	            let action = new MoveAction(this._gumaReference, entry, 4);
+	            action.start(iter, y / 2);
+	            //entry.position.x = iter;
+	            //entry.position.y = y / 2;
 	    		iter += entry.element.offsetWidth + this._offset;
 			};
 			
@@ -81,11 +84,12 @@ class OverspreadAction {
 	}
 	
 	_doStep() {
-		this._update();
+		this._run();
+		this._firstRun = false;
 	}
 	
 	_continueCondition() {
-		return true;
+		return this._firstRun;
 	}
 	
 	start() {

@@ -1,9 +1,9 @@
 class MoveAction {
-	constructor(gumaReference, element, rotateSpeed, moveSpeed) {
+	constructor(gumaReference, element, moveSpeed, rotateSpeed) {
 		this._gumaReference = gumaReference;
 		this._element = element;
-		this._maxRotateSpeed = rotateSpeed || 0.04;
 		this._maxMoveSpeed = moveSpeed || 10;
+		this._maxRotateSpeed = rotateSpeed || 0.04;
 		this._task = null;
 	}
 	
@@ -122,9 +122,10 @@ class OverspreadAction {
 		this._offset = offset || 10;
 		this._task = null;
 		this._hiddenItems = true;
+		this._firstRun = true;
 	}
 	
-	_update() {
+	_run() {
 		let screenWidth = window.innerWidth;
 		let fullWidth = -4 * this._offset;
 		let widthPrev = fullWidth;
@@ -185,8 +186,10 @@ class OverspreadAction {
 	            	continue;
 	            }
 
-	            entry.position.x = iter;
-	            entry.position.y = y / 2;
+	            let action = new MoveAction(this._gumaReference, entry, 4);
+	            action.start(iter, y / 2);
+	            //entry.position.x = iter;
+	            //entry.position.y = y / 2;
 	    		iter += entry.element.offsetWidth + this._offset;
 			};
 			
@@ -196,11 +199,12 @@ class OverspreadAction {
 	}
 	
 	_doStep() {
-		this._update();
+		this._run();
+		this._firstRun = false;
 	}
 	
 	_continueCondition() {
-		return true;
+		return this._firstRun;
 	}
 	
 	start() {
@@ -432,9 +436,10 @@ class Guma {
             requestAnimationFrame(animate.bind(this));
             
             //this.controls.update();
-            this.animationManager.update();
             
             this._renderer.render(this._scene, this.camera);
+            
+            this.animationManager.update();
         }
         
         this._onWindowResize();
@@ -500,9 +505,6 @@ class PrismPageSet extends THREE.Group {
 			let x = this._radius * Math.sin(iterAngle);
 			let z = this._radius * Math.cos(iterAngle);
 			
-			//let page = new GumaPage(this._gumaReference, pageContents[i], this._pageWidth, this._pageHeight, this._x + x, this._y + y, this._z + z);
-			//page.rotation.y = iterAngle;
-			
 			let page = new GumaPage(this._gumaReference, pageContents[i], this._pageWidth, this._pageHeight, this.position.x, this.position.y, this.position.z);
 			page.moveTo(this.position.x + x, this.position.y + y, this.position.z + z, page.rotation.x, iterAngle, page.rotation.z);
 			
@@ -519,14 +521,9 @@ class PrismPageSet extends THREE.Group {
 	
 	_pageClick(angle) {
 		return () => {
-			//this._gumaReference.controls.rotateCamera(angle); // TODO rotate PrismPageSet
 			this._rotate(angle);
 		};
 	}
-	
-	/*_pageClick(index) {
-		return () => {this._gumaReference.controls.scrollToPage(index)};
-	}*/
 	
 	_rotate(angle) {
 		if (this.rotateAction == null) {
@@ -534,16 +531,6 @@ class PrismPageSet extends THREE.Group {
 		}
 		
 		this.rotateAction.start(angle);
-		//this.rotation.y = angle;
-		/*for (let i = 0; i < this.children.length; i++) {
-			let page = this.children[i];
-			
-			if (page.moveArcAction == null) {
-				this.moveArcAction = new MoveArcAction(this._gumaReference, page);
-			}
-			
-			this.moveArcAction.moveAroundVerticalLine(this.position.x, this.position.z, angle);
-		}*/
 	}
 	
 	get pages() {

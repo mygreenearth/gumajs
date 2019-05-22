@@ -29,9 +29,10 @@ class Guma {
             requestAnimationFrame(animate.bind(this));
             
             //this.controls.update();
-            this.animationManager.update();
             
             this._renderer.render(this._scene, this.camera);
+            
+            this.animationManager.update();
         }
         
         this._onWindowResize();

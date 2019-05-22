@@ -22,9 +22,6 @@ class PrismPageSet extends THREE.Group {
 			let x = this._radius * Math.sin(iterAngle);
 			let z = this._radius * Math.cos(iterAngle);
 			
-			//let page = new GumaPage(this._gumaReference, pageContents[i], this._pageWidth, this._pageHeight, this._x + x, this._y + y, this._z + z);
-			//page.rotation.y = iterAngle;
-			
 			let page = new GumaPage(this._gumaReference, pageContents[i], this._pageWidth, this._pageHeight, this.position.x, this.position.y, this.position.z);
 			page.moveTo(this.position.x + x, this.position.y + y, this.position.z + z, page.rotation.x, iterAngle, page.rotation.z);
 			
@@ -41,14 +38,9 @@ class PrismPageSet extends THREE.Group {
 	
 	_pageClick(angle) {
 		return () => {
-			//this._gumaReference.controls.rotateCamera(angle); // TODO rotate PrismPageSet
 			this._rotate(angle);
 		};
 	}
-	
-	/*_pageClick(index) {
-		return () => {this._gumaReference.controls.scrollToPage(index)};
-	}*/
 	
 	_rotate(angle) {
 		if (this.rotateAction == null) {
@@ -56,16 +48,6 @@ class PrismPageSet extends THREE.Group {
 		}
 		
 		this.rotateAction.start(angle);
-		//this.rotation.y = angle;
-		/*for (let i = 0; i < this.children.length; i++) {
-			let page = this.children[i];
-			
-			if (page.moveArcAction == null) {
-				this.moveArcAction = new MoveArcAction(this._gumaReference, page);
-			}
-			
-			this.moveArcAction.moveAroundVerticalLine(this.position.x, this.position.z, angle);
-		}*/
 	}
 	
 	get pages() {
