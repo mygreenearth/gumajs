@@ -125,10 +125,8 @@ class OverspreadAction {
 	}
 	
 	_update() {
-		let constant = 1;//2.5
-		let screenWidth = window.innerWidth / constant;
-		let fullWidth = -5;
-		let offset = 5;
+		let screenWidth = window.innerWidth;
+		let fullWidth = -4 * this._offset;
 		let widthPrev = fullWidth;
 	    let lineGroups = [];
 	    let maxWidth = 0;
@@ -136,13 +134,15 @@ class OverspreadAction {
 		let oneLine = true;
 		
 		lineGroups.push(currentGroup);
-		
+
 		for (let entry of this._children) {
 			widthPrev = fullWidth;
 			
-	        fullWidth += entry.element.offsetWidth + offset;
+	        if (entry !== this._children[0]) {
+		        fullWidth += entry.element.offsetWidth + this._offset;
+	        }
 			
-	        if (currentGroup.length > 0 && fullWidth * constant > screenWidth) {
+	        if (currentGroup.length > 0 && fullWidth > screenWidth) {
 	        	oneLine = false;
 	        	maxWidth = Math.max(maxWidth, widthPrev);
 	        	fullWidth = entry.element.offsetWidth;
@@ -155,9 +155,8 @@ class OverspreadAction {
 	        currentGroup.push(entry);
 		};
 
-	    let y = window.innerHeight - 75;
+	    let y = 1000 / window.innerHeight + 250;
 	    this._children[0].visible = !oneLine;
-	    //this._children[0].textElement.visible(!oneLine);
 	    
 		for (let entry of this._children) {
 	        if (entry === this._children[0]) {
@@ -165,59 +164,46 @@ class OverspreadAction {
 	        }
 	        
 	        entry.visible = oneLine || !this._hiddenItems;
-	        //entry.textElement.visible(oneLine || !this._hiddenItems);
 	    };
 	    
 	    if (!oneLine && this._hiddenItems) {
-	    	this._children[0].position.x = (- screenWidth + offset) / 10;
-	    	this._children[0].position.y = y / 25;
+	    	this._children[0].position.x = (- screenWidth + this._offset);
+	    	this._children[0].position.y = y;
 	    	
 	    	return;
 	    }
 
-		maxWidth += oneLine ? 0 : (this._children[0].element.offsetWidth + offset);
+		maxWidth += oneLine ? 0 : (this._children[0].element.offsetWidth + this._offset);
 		
-		let start = oneLine ? - maxWidth * 2.25 : (- screenWidth + offset);
+		let start = oneLine ? - maxWidth / 2 : (- screenWidth + this._offset);
 
 		for (let group of lineGroups) {
 	        let iter = start;
 	        
 			for (let entry of group) {
-	            if (entry == this._children[0] && oneLine) {
+	            if (entry === this._children[0] && oneLine) {
 	            	continue;
 	            }
-	//alert(entry.positionX + ' ' + iter + ' ' + entry.positionY + ' ' + y);
-	            entry.position.x = iter / 10;//alert(iter / 10 + ' ' + (y / 25));
-	            entry.position.y = y / 25;
-	            //entry.position.x = iter;
-	            //entry.position.y = y;
-	    		iter += (entry.element.offsetWidth + offset) * 5;
+
+	            entry.position.x = iter;
+	            entry.position.y = y / 2;
+	    		iter += entry.element.offsetWidth + this._offset;
 			};
 			
-			y -= (this._children[0].element.offsetHeight - offset) * 5;
+			y -= this._children[0].element.offsetHeight - this._offset;
 		};
 		
 	}
-    
 	
 	_doStep() {
-
-		/*if (typeof this._TEST !== 'undefined')
-		for (let menuItem of this._TEST.menu.items) {
-			console.log( menuItem.element.innerHTML, menuItem.element.offsetWidth );
-		}*/
+		this._update();
 	}
 	
 	_continueCondition() {
-		this._update();
-		return false;
-		//return this._element.rotation.y != this._angle;
+		return true;
 	}
 	
 	start() {
-		//this._angle = angle - this._element.rotation.y || 0;
-		//this._radius = Math.sqrt(Math.pow(this._x - this._element.position.x, 2) + Math.pow(this._z - this._element.position.z, 2));
-		
 		if (this._task == null || !this._task.valid) {
 			this._task = this._gumaReference.animationManager.addTask(this._doStep.bind(this), this._continueCondition.bind(this));
 		}
@@ -336,9 +322,9 @@ class GumaMenu extends THREE.Group {
     	
 		this._gumaReference = gumaReference;
 		this._items = [];
-		this._x = x || 0;
-		this._y = y || 0;
-		this._z = z || 0;
+		this.position.x = x || 0;
+		this.position.y = y || 0;
+		this.position.z = z || 0;
 
 		let trippleBar = new GumaMenuItem(gumaReference, '\u2261', null);
 		
@@ -346,7 +332,7 @@ class GumaMenu extends THREE.Group {
         this.add(trippleBar);
 
         for (let i = 0; i < texts.length; i++) {
-			let menuItem = new GumaMenuItem(gumaReference, texts[i], actions[i]);
+			let menuItem = new GumaMenuItem(gumaReference, texts[i], actions[i], x, y, z);
 			
             this._items.push(menuItem);
             this.add(menuItem);
@@ -366,7 +352,7 @@ class GumaMenuItem extends THREE.CSS3DObject {
 		
 		this.position.x = x || 0;
 		this.position.y = y || 0;
-		this.position.z = z || 1800;
+		this.position.z = z || 0;
 
 		this.element.innerHTML = buttonText;
 		this.element.onclick = action;
@@ -469,7 +455,6 @@ class Guma {
 		for (let page of prismPageSet.pages) {
 			this._scene.add(page);
 			this._pages.push(page);
-			page.visible = false;
 		}
 		
 		for (let menuItem of prismPageSet.menu.items) {
@@ -529,7 +514,7 @@ class PrismPageSet extends THREE.Group {
 			iterAngle += this._rotateAngle;
 		}
 
-		this._menu = new GumaMenu(gumaReference, pageNames, /*pages(),*/ pageActions);
+		this._menu = new GumaMenu(gumaReference, pageNames, /*pages(),*/ pageActions, x, y, z + this._radius * 2);
 	}
 	
 	_pageClick(angle) {
@@ -603,9 +588,5 @@ class Utils {
 		}
 		
 		return Utils.trimAngle(angleFrom + Utils.getRotateDirection(angleFrom, angleTo) * speed);
-	}
-	
-	static setVisible(object, value) {
-		
 	}
 }
