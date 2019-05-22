@@ -36,7 +36,7 @@ class PrismPageSet extends THREE.Group {
 			iterAngle += this._rotateAngle;
 		}
 
-		this._menu = new GumaMenu(gumaReference, pageNames, /*pages(),*/ pageActions);
+		this._menu = new GumaMenu(gumaReference, pageNames, /*pages(),*/ pageActions, x, y, z + this._radius * 2);
 	}
 	
 	_pageClick(angle) {

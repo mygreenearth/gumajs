@@ -14,7 +14,7 @@ class GumaMenu extends THREE.Group {
         this.add(trippleBar);
 
         for (let i = 0; i < texts.length; i++) {
-			let menuItem = new GumaMenuItem(gumaReference, texts[i], actions[i]);
+			let menuItem = new GumaMenuItem(gumaReference, texts[i], actions[i], x, y, z);
 			
             this._items.push(menuItem);
             this.add(menuItem);
