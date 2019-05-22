@@ -1,37 +1,3 @@
-class GumaAnimationManager {
-	constructor() {
-		this._tasks = [];
-	}
-	
-	addTask(action, condition) {
-		let task = {
-			action: action,
-			condition: condition,
-			valid: true
-		};
-		
-		this._tasks.push(task);
-		
-		return task;
-	}
-	
-	update() {
-		this._tasks = this._tasks.filter(this._checkCondition);
-		
-		for (let t of this._tasks) {
-			t.action();
-		}
-	}
-	
-	_checkCondition(element, index, array) {
-		if (!element.condition()) {
-			element.valid = false;
-			return false;
-		}
-		
-		return true; 
-	}
-}
 class MoveAction {
 	constructor(gumaReference, element, rotateSpeed, moveSpeed) {
 		this._gumaReference = gumaReference;
@@ -41,7 +7,7 @@ class MoveAction {
 		this._task = null;
 	}
 	
-	_moveAction() {
+	_doStep() {
 		if (this._element.position.x < this._x) {
 			this._element.position.x = Math.min(this._x, this._element.position.x + this._speedX);
 		} else if (this._element.position.x > this._x) {
@@ -65,7 +31,7 @@ class MoveAction {
 		this._element.rotation.z = Utils.getRotateStep(this._element.rotation.z, this._rotZ, this._speedRotZ);
 	}
 	
-	_moveCondition() {
+	_continueCondition() {
 		return this._x != this._element.position.x
 		|| this._y != this._element.position.y
 		|| this._z != this._element.position.z
@@ -99,7 +65,7 @@ class MoveAction {
 		this._speedRotZ = rotZDistance / maxSteps;
 	}
 	
-	moveTo(x, y, z, rotX, rotY, rotZ) {
+	start(x, y, z, rotX, rotY, rotZ) {
 		this._x = x || this._element.position.x;
 		this._y = y || this._element.position.y;
 		this._z = z || this._element.position.z;
@@ -110,20 +76,19 @@ class MoveAction {
 		this._recalculateSpeeds();
 		
 		if (this._task == null || !this._task.valid) {
-			this._task = this._gumaReference.animationManager.addTask(this._moveAction.bind(this), this._moveCondition.bind(this));
+			this._task = this._gumaReference.animationManager.addTask(this._doStep.bind(this), this._continueCondition.bind(this));
 		}
 	}
 }
 class MoveArcAction {
-	constructor(gumaReference, element, rotateSpeed, moveSpeed) {
+	constructor(gumaReference, element, rotateSpeed) {
 		this._gumaReference = gumaReference;
 		this._element = element;
 		this._maxRotateSpeed = rotateSpeed || 0.04;
-		this._maxMoveSpeed = moveSpeed || 10;
 		this._task = null;
 	}
 	
-	_moveAction() {
+	_doStep() {
 		this._element.rotation.y = Utils.getRotateStep(this._element.rotation.y, this._angle, this._maxRotateSpeed);
 		let angle = this._element.rotation.y;
 		let x = this._radius * Math.sin(angle);
@@ -133,44 +98,153 @@ class MoveArcAction {
 		this._element.position.z = this._z + z;
 	}
 	
-	_moveCondition() {
+	_continueCondition() {
 		return this._element.rotation.y != this._angle;
 	}
 	
-	moveAroundVerticalLine(x, z, angle) {
+	start(x, z, angle) {
 		this._x = x || this._element.position.x;
 		this._z = z || this._element.position.z;
 		this._angle = angle + this._element.rotation.y || 0;
 		this._radius = Math.sqrt(Math.pow(this._x - this._element.position.x, 2) + Math.pow(this._z - this._element.position.z, 2));
 		
 		if (this._task == null || !this._task.valid) {
-			this._task = this._gumaReference.animationManager.addTask(this._moveAction.bind(this), this._moveCondition.bind(this));
+			this._task = this._gumaReference.animationManager.addTask(this._doStep.bind(this), this._continueCondition.bind(this));
+		}
+	}
+}
+class OverspreadAction {
+	constructor(gumaReference, element, children, moveSpeed, offset) {
+		this._gumaReference = gumaReference;
+		this._element = element || null;
+		this._children = children || this._element.children;
+		this._maxMoveSpeed = moveSpeed || 10;
+		this._offset = offset || 10;
+		this._task = null;
+		this._hiddenItems = true;
+	}
+	
+	_update() {
+		let constant = 1;//2.5
+		let screenWidth = window.innerWidth / constant;
+		let fullWidth = -5;
+		let offset = 5;
+		let widthPrev = fullWidth;
+	    let lineGroups = [];
+	    let maxWidth = 0;
+		let currentGroup = [];
+		let oneLine = true;
+		
+		lineGroups.push(currentGroup);
+		
+		for (let entry of this._children) {
+			widthPrev = fullWidth;
+			
+	        fullWidth += entry.element.offsetWidth + offset;
+			
+	        if (currentGroup.length > 0 && fullWidth * constant > screenWidth) {
+	        	oneLine = false;
+	        	maxWidth = Math.max(maxWidth, widthPrev);
+	        	fullWidth = entry.element.offsetWidth;
+	        	currentGroup = [];
+	        	lineGroups.push(currentGroup);
+	        } else {
+	        	maxWidth = Math.max(maxWidth, fullWidth);
+	        }
+	        
+	        currentGroup.push(entry);
+		};
+
+	    let y = window.innerHeight - 75;
+	    this._children[0].visible = !oneLine;
+	    //this._children[0].textElement.visible(!oneLine);
+	    
+		for (let entry of this._children) {
+	        if (entry === this._children[0]) {
+	            continue;
+	        }
+	        
+	        entry.visible = oneLine || !this._hiddenItems;
+	        //entry.textElement.visible(oneLine || !this._hiddenItems);
+	    };
+	    
+	    if (!oneLine && this._hiddenItems) {
+	    	this._children[0].position.x = (- screenWidth + offset) / 10;
+	    	this._children[0].position.y = y / 25;
+	    	
+	    	return;
+	    }
+
+		maxWidth += oneLine ? 0 : (this._children[0].element.offsetWidth + offset);
+		
+		let start = oneLine ? - maxWidth * 2.25 : (- screenWidth + offset);
+
+		for (let group of lineGroups) {
+	        let iter = start;
+	        
+			for (let entry of group) {
+	            if (entry == this._children[0] && oneLine) {
+	            	continue;
+	            }
+	//alert(entry.positionX + ' ' + iter + ' ' + entry.positionY + ' ' + y);
+	            entry.position.x = iter / 10;//alert(iter / 10 + ' ' + (y / 25));
+	            entry.position.y = y / 25;
+	            //entry.position.x = iter;
+	            //entry.position.y = y;
+	    		iter += (entry.element.offsetWidth + offset) * 5;
+			};
+			
+			y -= (this._children[0].element.offsetHeight - offset) * 5;
+		};
+		
+	}
+    
+	
+	_doStep() {
+
+		/*if (typeof this._TEST !== 'undefined')
+		for (let menuItem of this._TEST.menu.items) {
+			console.log( menuItem.element.innerHTML, menuItem.element.offsetWidth );
+		}*/
+	}
+	
+	_continueCondition() {
+		this._update();
+		return false;
+		//return this._element.rotation.y != this._angle;
+	}
+	
+	start() {
+		//this._angle = angle - this._element.rotation.y || 0;
+		//this._radius = Math.sqrt(Math.pow(this._x - this._element.position.x, 2) + Math.pow(this._z - this._element.position.z, 2));
+		
+		if (this._task == null || !this._task.valid) {
+			this._task = this._gumaReference.animationManager.addTask(this._doStep.bind(this), this._continueCondition.bind(this));
 		}
 	}
 }
 class RotateAction {
-	constructor(gumaReference, element, rotateSpeed, moveSpeed) {
+	constructor(gumaReference, element, rotateSpeed) {
 		this._gumaReference = gumaReference;
 		this._element = element;
 		this._maxRotateSpeed = rotateSpeed || 0.04;
-		this._maxMoveSpeed = moveSpeed || 10;
 		this._task = null;
 	}
 	
-	_rotateAction() {
+	_doStep() {
 		this._element.rotation.y = Utils.getRotateStep(this._element.rotation.y, this._angle, this._maxRotateSpeed);
 	}
 	
-	_rotateCondition() {
+	_continueCondition() {
 		return this._element.rotation.y != this._angle;
 	}
 	
-	rotate(angle) {
+	start(angle) {
 		this._angle = angle - this._element.rotation.y || 0;
 		//this._radius = Math.sqrt(Math.pow(this._x - this._element.position.x, 2) + Math.pow(this._z - this._element.position.z, 2));
 		
 		if (this._task == null || !this._task.valid) {
-			this._task = this._gumaReference.animationManager.addTask(this._rotateAction.bind(this), this._rotateCondition.bind(this));
+			this._task = this._gumaReference.animationManager.addTask(this._doStep.bind(this), this._continueCondition.bind(this));
 		}
 	}
 }
@@ -222,16 +296,60 @@ class GumaControls {
 		}
 	}
 }
-class GumaMenu {
+class GumaAnimationManager {
+	constructor() {
+		this._tasks = [];
+	}
+	
+	addTask(action, condition) {
+		let task = {
+			action: action,
+			condition: condition,
+			valid: true
+		};
+		
+		this._tasks.push(task);
+		
+		return task;
+	}
+	
+	update() {
+		this._tasks = this._tasks.filter(this._checkCondition);
+		
+		for (let t of this._tasks) {
+			t.action();
+		}
+	}
+	
+	_checkCondition(element, index, array) {
+		if (!element.condition()) {
+			element.valid = false;
+			return false;
+		}
+		
+		return true; 
+	}
+}
+class GumaMenu extends THREE.Group {
     constructor(gumaReference, texts, actions, x, y, z) {
+    	super();
+    	
 		this._gumaReference = gumaReference;
 		this._items = [];
 		this._x = x || 0;
 		this._y = y || 0;
 		this._z = z || 0;
 
-		for (let i = 0; i < texts.length; i++) {
-            this._items.push(new GumaMenuItem(gumaReference, texts[i], actions[i]));
+		let trippleBar = new GumaMenuItem(gumaReference, '\u2261', null);
+		
+        this._items.push(trippleBar);
+        this.add(trippleBar);
+
+        for (let i = 0; i < texts.length; i++) {
+			let menuItem = new GumaMenuItem(gumaReference, texts[i], actions[i]);
+			
+            this._items.push(menuItem);
+            this.add(menuItem);
 		}
 	}
     
@@ -289,11 +407,87 @@ class GumaPage extends THREE.CSS3DObject {
 			this._moveAction = new MoveAction(this._gumaReference, this);
 		}
 		
-		this._moveAction.moveTo(x, y, z, rotX, rotY, rotZ);
+		this._moveAction.start(x, y, z, rotX, rotY, rotZ);
 	}
 	
 	rotate(rotX, rotY, rotZ) {
 		 this.moveTo(this.position.x, this.position.y, this.position.z, rotX, rotY, rotZ);
+	}
+}
+
+'use strict';
+class Guma {
+	constructor() {
+		this._scene = new THREE.Scene();
+		
+		this._renderer = new THREE.CSS3DRenderer();
+		this._renderer.setSize( window.innerWidth, window.innerHeight );
+		this._renderer.domElement.style.position = 'absolute';
+		this._renderer.domElement.style.top = 0;
+		this._renderer.domElement.style.zIndex = 0;
+        document.body.appendChild( this._renderer.domElement );
+        
+        window.addEventListener('resize', this._onWindowResize.bind(this), false);
+        window.addEventListener('touchend', this._onWindowResize.bind(this), false);
+	    
+        this.cameraDistance = 2000;
+        
+        this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 1000 );
+        this.camera.position.set(0, 0, this.cameraDistance);
+        
+        this._pages = [];
+        
+        this.animationManager = new GumaAnimationManager();
+        this.controls = new GumaControls(this);
+        
+        animate.bind(this)();
+
+        function animate() {
+            requestAnimationFrame(animate.bind(this));
+            
+            //this.controls.update();
+            this.animationManager.update();
+            
+            this._renderer.render(this._scene, this.camera);
+        }
+        
+        this._onWindowResize();
+	}
+	
+	addPage(content, width, height, x, y, z) {
+		let page = new GumaPage(this, content, width, height, x, y, z);
+		
+		this._scene.add(page);
+		this._pages.push(page);
+		
+		return page;
+	}
+	
+	addPrismPageSet(pageNames, pageContents, pageWidth, pageHeight, x, y, z) {
+		let prismPageSet = new PrismPageSet(this, pageNames, pageContents, pageWidth, pageHeight, x, y, z);
+		
+		for (let page of prismPageSet.pages) {
+			this._scene.add(page);
+			this._pages.push(page);
+			page.visible = false;
+		}
+		
+		for (let menuItem of prismPageSet.menu.items) {
+			this._scene.add(menuItem);
+		}
+		
+		let action = new OverspreadAction(this, prismPageSet.menu, prismPageSet.menu.items);
+		action.start();
+
+		this._scene.add(prismPageSet);
+		
+		return prismPageSet;
+	}
+	
+	_onWindowResize() {
+		this.camera.aspect = window.innerWidth / window.innerHeight;
+		this.camera.updateProjectionMatrix();
+        this._renderer.setSize(window.innerWidth, window.innerHeight);
 	}
 }
 
@@ -354,7 +548,7 @@ class PrismPageSet extends THREE.Group {
 			this.rotateAction = new RotateAction(this._gumaReference, this);
 		}
 		
-		this.rotateAction.rotate(angle);
+		this.rotateAction.start(angle);
 		//this.rotation.y = angle;
 		/*for (let i = 0; i < this.children.length; i++) {
 			let page = this.children[i];
@@ -373,78 +567,6 @@ class PrismPageSet extends THREE.Group {
 	
 	get menu() {
 		return this._menu;
-	}
-}
-
-'use strict';
-class Guma {
-	constructor() {
-		this._scene = new THREE.Scene();
-		
-		this._renderer = new THREE.CSS3DRenderer();
-		this._renderer.setSize( window.innerWidth, window.innerHeight );
-		this._renderer.domElement.style.position = 'absolute';
-		this._renderer.domElement.style.top = 0;
-		this._renderer.domElement.style.zIndex = 0;
-        document.body.appendChild( this._renderer.domElement );
-        
-        window.addEventListener('resize', this._onWindowResize.bind(this), false);
-        window.addEventListener('touchend', this._onWindowResize.bind(this), false);
-	    
-        this.cameraDistance = 2000;
-        
-        this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 1000 );
-        this.camera.position.set(0, 0, this.cameraDistance);
-        
-        this._pages = [];
-        
-        this.animationManager = new GumaAnimationManager();
-        this.controls = new GumaControls(this);
-        
-        animate.bind(this)();
-
-        function animate() {
-            requestAnimationFrame(animate.bind(this));
-            
-            //this.controls.update();
-            this.animationManager.update();
-            
-            this._renderer.render(this._scene, this.camera);
-        }
-        
-        this._onWindowResize();
-	}
-	
-	addPage(content, width, height, x, y, z) {
-		let page = new GumaPage(this, content, width, height, x, y, z);
-		
-		this._scene.add(page);
-		this._pages.push(page);
-		
-		return page;
-	}
-	
-	addPrismPageSet(pageNames, pageContents, pageWidth, pageHeight, x, y, z) {
-		let prismPageSet = new PrismPageSet(this, pageNames, pageContents, pageWidth, pageHeight, x, y, z);
-		
-		for (let page of prismPageSet.pages) {
-			this._scene.add(page);
-			this._pages.push(page);
-		}
-		
-		for (let menuItem of prismPageSet.menu.items) {
-			this._scene.add(menuItem);
-		}
-
-		this._scene.add(prismPageSet);
-
-		return prismPageSet;
-	}
-	
-	_onWindowResize() {
-		this.camera.aspect = window.innerWidth / window.innerHeight;
-		this.camera.updateProjectionMatrix();
-        this._renderer.setSize(window.innerWidth, window.innerHeight);
 	}
 }
 
@@ -481,5 +603,9 @@ class Utils {
 		}
 		
 		return Utils.trimAngle(angleFrom + Utils.getRotateDirection(angleFrom, angleTo) * speed);
+	}
+	
+	static setVisible(object, value) {
+		
 	}
 }

@@ -32,7 +32,7 @@ class GumaPage extends THREE.CSS3DObject {
 			this._moveAction = new MoveAction(this._gumaReference, this);
 		}
 		
-		this._moveAction.moveTo(x, y, z, rotX, rotY, rotZ);
+		this._moveAction.start(x, y, z, rotX, rotY, rotZ);
 	}
 	
 	rotate(rotX, rotY, rotZ) {

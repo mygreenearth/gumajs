@@ -57,9 +57,12 @@ class Guma {
 		for (let menuItem of prismPageSet.menu.items) {
 			this._scene.add(menuItem);
 		}
+		
+		let action = new OverspreadAction(this, prismPageSet.menu, prismPageSet.menu.items);
+		action.start();
 
 		this._scene.add(prismPageSet);
-
+		
 		return prismPageSet;
 	}
 	

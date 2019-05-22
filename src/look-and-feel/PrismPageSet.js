@@ -55,7 +55,7 @@ class PrismPageSet extends THREE.Group {
 			this.rotateAction = new RotateAction(this._gumaReference, this);
 		}
 		
-		this.rotateAction.rotate(angle);
+		this.rotateAction.start(angle);
 		//this.rotation.y = angle;
 		/*for (let i = 0; i < this.children.length; i++) {
 			let page = this.children[i];

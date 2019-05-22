@@ -7,7 +7,7 @@ class MoveAction {
 		this._task = null;
 	}
 	
-	_moveAction() {
+	_doStep() {
 		if (this._element.position.x < this._x) {
 			this._element.position.x = Math.min(this._x, this._element.position.x + this._speedX);
 		} else if (this._element.position.x > this._x) {
@@ -31,7 +31,7 @@ class MoveAction {
 		this._element.rotation.z = Utils.getRotateStep(this._element.rotation.z, this._rotZ, this._speedRotZ);
 	}
 	
-	_moveCondition() {
+	_continueCondition() {
 		return this._x != this._element.position.x
 		|| this._y != this._element.position.y
 		|| this._z != this._element.position.z
@@ -65,7 +65,7 @@ class MoveAction {
 		this._speedRotZ = rotZDistance / maxSteps;
 	}
 	
-	moveTo(x, y, z, rotX, rotY, rotZ) {
+	start(x, y, z, rotX, rotY, rotZ) {
 		this._x = x || this._element.position.x;
 		this._y = y || this._element.position.y;
 		this._z = z || this._element.position.z;
@@ -76,7 +76,7 @@ class MoveAction {
 		this._recalculateSpeeds();
 		
 		if (this._task == null || !this._task.valid) {
-			this._task = this._gumaReference.animationManager.addTask(this._moveAction.bind(this), this._moveCondition.bind(this));
+			this._task = this._gumaReference.animationManager.addTask(this._doStep.bind(this), this._continueCondition.bind(this));
 		}
 	}
 }

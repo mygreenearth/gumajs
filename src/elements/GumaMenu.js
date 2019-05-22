@@ -1,13 +1,23 @@
-class GumaMenu {
+class GumaMenu extends THREE.Group {
     constructor(gumaReference, texts, actions, x, y, z) {
+    	super();
+    	
 		this._gumaReference = gumaReference;
 		this._items = [];
-		this._x = x || 0;
-		this._y = y || 0;
-		this._z = z || 0;
+		this.position.x = x || 0;
+		this.position.y = y || 0;
+		this.position.z = z || 0;
 
-		for (let i = 0; i < texts.length; i++) {
-            this._items.push(new GumaMenuItem(gumaReference, texts[i], actions[i]));
+		let trippleBar = new GumaMenuItem(gumaReference, '\u2261', null);
+		
+        this._items.push(trippleBar);
+        this.add(trippleBar);
+
+        for (let i = 0; i < texts.length; i++) {
+			let menuItem = new GumaMenuItem(gumaReference, texts[i], actions[i]);
+			
+            this._items.push(menuItem);
+            this.add(menuItem);
 		}
 	}
     
