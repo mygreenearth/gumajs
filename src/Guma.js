@@ -67,6 +67,26 @@ class Guma {
 		return prismPageSet;
 	}
 	
+	addWindowsSet(pageNames, pageContents, x, y, z, fullPageWidth, fullPageHeight, minPageWidth, minPageHeight) {
+		let windowsSet = new WindowsSet(this, pageNames, pageContents, x, y, z, fullPageWidth, fullPageHeight, minPageWidth, minPageHeight);
+		
+		for (let page of windowsSet.pages) {
+			this._scene.add(page);
+			this._pages.push(page);
+		}
+		
+		for (let menuItem of windowsSet.menu.items) {
+			this._scene.add(menuItem);
+		}
+		
+		let action = new OverspreadAction(this, windowsSet.menu, windowsSet.menu.items);
+		action.start();
+
+		this._scene.add(windowsSet);
+		
+		return windowsSet;
+	}
+	
 	_onWindowResize() {
 		this.camera.aspect = window.innerWidth / window.innerHeight;
 		this.camera.updateProjectionMatrix();
