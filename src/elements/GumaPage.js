@@ -16,6 +16,7 @@ class GumaPage extends THREE.CSS3DObject {
 		this.rotation.x = rotX || 0;
 		this.rotation.y = rotY || 0;
 		this.rotation.z = rotZ || 0;
+		this.inFront = false;
 		
 		this.updateSize();
 		
@@ -37,5 +38,55 @@ class GumaPage extends THREE.CSS3DObject {
 	
 	rotate(rotX, rotY, rotZ) {
 		 this.moveTo(this.position.x, this.position.y, this.position.z, rotX, rotY, rotZ);
+	}	
+	
+	popup() {
+		this.setCollapsedCoors();
+		
+		if (this.moveAndResizeAction == null) {
+			this.moveAndResizeAction = new MoveAndResizeAction(this._gumaReference, this);
+		}
+		
+		this.moveAndResizeAction.start(-20, -25, this.position.z + 1200, 800, 600);
+		this.inFront = true;
+	}
+	
+	collapse() {
+		if (this.moveAndResizeAction == null) {
+			this.moveAndResizeAction = new MoveAndResizeAction(this._gumaReference, this);
+		}
+		
+		this.moveAndResizeAction.start(this.colX, this.colY, this.colZ, this.colWidth, this.colHeight,
+				this.colRotX, this.colRotY, this.colRotZ);
+		this.inFront = false;
+	}
+
+	setCollapsedCoors(x, y, z, width, height, rotX, rotY, rotZ) {
+		this.colX = x || this.position.x;
+		this.colY = y || this.position.y;
+		this.colZ = z || this.position.z;
+		this.colWidth = width || this._width;
+		this.colHeight = height || this._height;
+		this.colRotX = rotX || this.rotation.x;
+		this.colRotY = rotY || this.rotation.y;
+		this.colRotZ = rotZ || this.rotation.z;
+	}
+	
+	get width() {
+		return this._width;
+	}
+	
+	set width(width) {
+		this._width = width;
+		this.element.style.width = this._width + 'px';
+	}
+	
+	get height() {
+		return this._height;
+	}
+	
+	set height(height) {
+		this._height = height;
+		this.element.style.height = this._height + 'px';
 	}
 }

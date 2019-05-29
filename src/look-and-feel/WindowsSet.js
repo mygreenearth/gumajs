@@ -20,6 +20,7 @@ class WindowsSet extends THREE.Group {
 		let yIter = 350;
 		
 		this._pages = []; //TODO Three.Group???
+		this._frontPage = null;
 		
 		let pageActions = [];
 		let colIndex = 0;
@@ -31,7 +32,7 @@ class WindowsSet extends THREE.Group {
 			//let page = new GumaPage(this._gumaReference, pageContents[i], this._pageWidth, this._pageHeight, this.position.x, this.position.y, this.position.z);
 			page.moveTo(this.position.x + x, this.position.y + yIter);
 			
-			pageActions.push(this._pageClick(page));
+			pageActions.push(this._pageClick(page, this));
 			page.element.onclick = pageActions[i];
 			
 			//this.add(page);
@@ -46,21 +47,22 @@ class WindowsSet extends THREE.Group {
 			}
 		}
 
-		this._menu = new GumaMenu(gumaReference, pageNames, /*pages(),*/ pageActions, x, y, z + 1600);
+		this._menu = new GumaMenu(gumaReference, pageNames, /*pages(),*/ pageActions, x, y, z + 1670);
 	}
 	
-	_pageClick(page) {
+	_pageClick(page, caller) {
 		return () => {
-			this.popupPage(page);
+			if (!page.inFront) {
+				if (caller._frontPage != null) {
+					caller._frontPage.collapse();
+				}
+				
+				page.popup();
+				caller._frontPage = page;
+			} else {
+				page.collapse();
+			}
 		};
-	}
-	
-	popupPage(page) {
-		if (this.rotateAction == null) {
-			this.rotateAction = new RotateAction(this._gumaReference, this);
-		}
-		
-		this.rotateAction.start(angle);
 	}
 	
 	get pages() {
