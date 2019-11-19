@@ -199,7 +199,7 @@ class MoveArcAction {
 	}
 	
 	_doStep() {
-		this._element.rotation.y = Utils.getRotateStep(this._element.rotation.y, this._angle, this._maxRotateSpeed);
+		this._element.rotation.y = Utils.getRotateStep(this._element.rotation.y, this._desiredAngle, this._maxRotateSpeed);
 		let angle = this._element.rotation.y;
 		let x = this._radius * Math.sin(angle);
 		let z = this._radius * Math.cos(angle);
@@ -209,13 +209,13 @@ class MoveArcAction {
 	}
 	
 	_continueCondition() {
-		return this._element.rotation.y != this._angle;
+		return this._element.rotation.y != this._desiredAngle;
 	}
 	
 	start(x, z, angle) {
-		this._x = x || this._element.position.x;
-		this._z = z || this._element.position.z;
-		this._angle = angle + this._element.rotation.y || 0;
+		this._x = x;
+		this._z = z;
+		this._desiredAngle = Utils.trimAngle(angle + this._element.rotation.y);
 		this._radius = Math.sqrt(Math.pow(this._x - this._element.position.x, 2) + Math.pow(this._z - this._element.position.z, 2));
 		
 		if (this._task == null || !this._task.valid) {
@@ -237,7 +237,7 @@ class OverspreadAction {
 	
 	_run() {
 		let screenWidth = window.innerWidth;
-		let fullWidth = -4 * this._offset;
+		let fullWidth = -this._offset;
 		let widthPrev = fullWidth;
 	    let lineGroups = [];
 	    let maxWidth = 0;
@@ -297,7 +297,7 @@ class OverspreadAction {
 	            }
 
 	            let action = new MoveAction(this._gumaReference, entry, 4);
-	            action.start(iter, y / 2);
+	            action.start(iter + entry.element.offsetWidth / 2, y / 2);
 	            //entry.position.x = iter;
 	            //entry.position.y = y / 2;
 	    		iter += entry.element.offsetWidth + this._offset;
@@ -332,6 +332,9 @@ class RotateAction {
 	}
 	
 	_doStep() {
+		/*for (let entry of this._element._pages) {// TODO should work generic, not only for pageset
+			entry.rotation.y = Utils.getRotateStep(entry.rotation.y, this._angle, this._maxRotateSpeed);
+		}*/
 		this._element.rotation.y = Utils.getRotateStep(this._element.rotation.y, this._angle, this._maxRotateSpeed);
 	}
 	
@@ -481,6 +484,8 @@ class GumaPage extends THREE.CSS3DObject {
 		
 		this.element.innerHTML = content;
 		this.element.style.background = 'lightblue';
+		this.element.style.overflowY = 'scroll';
+		this.element.style.padding = '5px';
 		//this.element.onclick = function() { alert('yep!') };
 		
 		this._width = width || 800;
@@ -606,6 +611,14 @@ class Guma {
         this._onWindowResize();
 	}
 	
+	static getInstance() {
+		if (!Guma.instance) {
+			Guma.instance = new Guma();
+		}
+		
+		return Guma.instance;
+	}
+	
 	addPage(content, width, height, x, y, z) {
 		let page = new GumaPage(this, content, width, height, x, y, z);
 		
@@ -636,21 +649,8 @@ class Guma {
 	}
 	
 	addWindowsSet(pageNames, pageContents, x, y, z, fullPageWidth, fullPageHeight, minPageWidth, minPageHeight) {
-		let windowsSet = new WindowsSet(this, pageNames, pageContents, x, y, z, fullPageWidth, fullPageHeight, minPageWidth, minPageHeight);
-		
-		for (let page of windowsSet.pages) {
-			this._scene.add(page);
-			this._pages.push(page);
-		}
-		
-		for (let menuItem of windowsSet.menu.items) {
-			this._scene.add(menuItem);
-		}
-		
-		let action = new OverspreadAction(this, windowsSet.menu, windowsSet.menu.items);
-		action.start();
-
-		this._scene.add(windowsSet);
+		let windowsSet = new WindowsSet(this);
+		windowsSet.init(pageNames, pageContents, x, y, z, fullPageWidth, fullPageHeight, minPageWidth, minPageHeight);
 		
 		return windowsSet;
 	}
@@ -680,7 +680,7 @@ class PrismPageSet extends THREE.Group {
 		this._diameter = this._pageWidth * Math.tan(this._angle / 2);
 		this._radius = this._diameter / 2;
 		
-		this._pages = []; //TODO Three.Group???
+		this._pages = [];
 
 		let pageActions = [];
 		let iterAngle = 0;
@@ -694,7 +694,6 @@ class PrismPageSet extends THREE.Group {
 			pageActions.push(this._pageClick(-iterAngle));
 			page.element.onclick = pageActions[i];
 			
-			//this.add(page);
 			this._pages.push(page);
 			
 			iterAngle += this._rotateAngle;
@@ -709,16 +708,17 @@ class PrismPageSet extends THREE.Group {
 		};
 	}
 	
-	_rotate(angle) {//TODO fix this. Problem with THREE.Group
-		if (this.rotateAction == null) {
-			this.rotateAction = new RotateAction(this._gumaReference, this);
+	_rotate(angle) {
+		for (let entry of this._pages) {
+			if (entry._moveArcAction == null) {
+				entry._moveArcAction = new MoveArcAction(this._gumaReference, entry);
+			}
+			
+			entry._moveArcAction.start(this.position.x, this.position.z, Utils.trimAngle(angle - this._pages[0].rotation.y));
 		}
-		
-		this.rotateAction.start(angle);
 	}
 	
 	get pages() {
-		//return this.children;
 		return this._pages;
 	}
 	
@@ -739,10 +739,13 @@ class WindowPage extends GumaPage {
 }
 
 class WindowsSet extends THREE.Group {
-	constructor(gumaReference, pageNames, pageContents, x, y, z, fullPageWidth, fullPageHeight, minPageWidth, minPageHeight) {
+	constructor(gumaReference) {
 		super();
 		
 		this._gumaReference = gumaReference;
+	}
+	
+	init(pageNames, pageContents, x, y, z, fullPageWidth, fullPageHeight, minPageWidth, minPageHeight) {
 		this.position.x = x || 0;
 		this.position.y = y || 0;
 		this.position.z = z || 0;
@@ -761,8 +764,8 @@ class WindowsSet extends THREE.Group {
 		
 		this._pages = []; //TODO Three.Group???
 		this._frontPage = null;
+		this._pageActions = [];
 		
-		let pageActions = [];
 		let colIndex = 0;
 		let rowIndex = 0;
 		for (let i = 0; i < pageContents.length; i++) {
@@ -772,8 +775,8 @@ class WindowsSet extends THREE.Group {
 			//let page = new GumaPage(this._gumaReference, pageContents[i], this._pageWidth, this._pageHeight, this.position.x, this.position.y, this.position.z);
 			page.moveTo(this.position.x + x, this.position.y + yIter);
 			
-			pageActions.push(this._pageClick(page, this));
-			page.element.onclick = pageActions[i];
+			this._pageActions.push(this._pageClick(page, this));
+			page.element.onclick = this._pageActions[i];
 			
 			//this.add(page);
 			this._pages.push(page);
@@ -787,22 +790,46 @@ class WindowsSet extends THREE.Group {
 			}
 		}
 
-		this._menu = new GumaMenu(gumaReference, pageNames, /*pages(),*/ pageActions, x, y, z + 1670);
+		this._menu = new GumaMenu(this._gumaReference, pageNames, /*pages(),*/ this._pageActions, x, y, z + 1670);
+		
+		// TODO private members of Guma used here
+		for (let page of this._pages) {
+			this._gumaReference._scene.add(page);
+			this._gumaReference._pages.push(page);
+		}
+		
+		for (let menuItem of this._menu.items) {
+			this._gumaReference._scene.add(menuItem);
+		}
+		
+		let action = new OverspreadAction(this._gumaReference, this._menu, this._menu.items);
+		action.start();
+
+		this._gumaReference._scene.add(this);
+
+	}
+	
+	clickMenu(index) {
+		this._doClick(this._pages[index], this);
 	}
 	
 	_pageClick(page, caller) {
 		return () => {
-			if (!page.inFront) {
-				if (caller._frontPage != null) {
-					caller._frontPage.collapse();
-				}
-				
-				page.popup();
-				caller._frontPage = page;
-			} else {
-				page.collapse();
-			}
+			caller._doClick(page, caller);
 		};
+	}
+	
+	_doClick(page, caller) {
+		if (!page.inFront) {
+			if (caller._frontPage != null) {
+				caller._frontPage.collapse();
+			}
+			
+			page.popup();
+			caller._frontPage = page;
+		} else {
+			page.collapse();
+		}
 	}
 	
 	get pages() {
@@ -817,9 +844,12 @@ class WindowsSet extends THREE.Group {
 
 class Utils {
 	static getRotateDirection(a1, a2) {
+		a1 = Utils.trimAngle(a1);
+		a2 = Utils.trimAngle(a2);
+
 		if (a1 == a2) return 0;
 		
-		return a1 > a2 == Math.abs(a1 - a2) > Math.PI ? 1 : -1;
+		return (a1 > a2) == (Math.abs(a1 - a2) > Math.PI) ? 1 : -1;
 	}
 	
 	static trimAngle(angle) {
@@ -831,6 +861,9 @@ class Utils {
 	}
 	
 	static getAngleDiff(a1, a2) {
+		a1 = Utils.trimAngle(a1);
+		a2 = Utils.trimAngle(a2);
+
 		if (Math.abs(a1 - a2) > Math.PI) {
 			if (a1 > a2) {
 				a2 += 2 * Math.PI;
@@ -844,13 +877,9 @@ class Utils {
 	
 	static getRotateStep(angleFrom, angleTo, speed) {
 		if (Utils.getAngleDiff(angleFrom, angleTo) <= speed) {
-			return angleTo;
+			return Utils.trimAngle(angleTo);
 		}
 		
 		return Utils.trimAngle(angleFrom + Utils.getRotateDirection(angleFrom, angleTo) * speed);
-	}
-	
-	static getStylePropValue(prop) {
-		return parseInt(prop, 10);
 	}
 }
