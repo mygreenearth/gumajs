@@ -7,7 +7,7 @@ class MoveArcAction {
 	}
 	
 	_doStep() {
-		this._element.rotation.y = Utils.getRotateStep(this._element.rotation.y, this._angle, this._maxRotateSpeed);
+		this._element.rotation.y = Utils.getRotateStep(this._element.rotation.y, this._desiredAngle, this._maxRotateSpeed);
 		let angle = this._element.rotation.y;
 		let x = this._radius * Math.sin(angle);
 		let z = this._radius * Math.cos(angle);
@@ -17,13 +17,13 @@ class MoveArcAction {
 	}
 	
 	_continueCondition() {
-		return this._element.rotation.y != this._angle;
+		return this._element.rotation.y != this._desiredAngle;
 	}
 	
 	start(x, z, angle) {
-		this._x = x || this._element.position.x;
-		this._z = z || this._element.position.z;
-		this._angle = angle + this._element.rotation.y || 0;
+		this._x = x;
+		this._z = z;
+		this._desiredAngle = Utils.trimAngle(angle + this._element.rotation.y);
 		this._radius = Math.sqrt(Math.pow(this._x - this._element.position.x, 2) + Math.pow(this._z - this._element.position.z, 2));
 		
 		if (this._task == null || !this._task.valid) {

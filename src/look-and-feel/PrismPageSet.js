@@ -16,7 +16,7 @@ class PrismPageSet extends THREE.Group {
 		this._diameter = this._pageWidth * Math.tan(this._angle / 2);
 		this._radius = this._diameter / 2;
 		
-		this._pages = []; //TODO Three.Group???
+		this._pages = [];
 
 		let pageActions = [];
 		let iterAngle = 0;
@@ -30,7 +30,6 @@ class PrismPageSet extends THREE.Group {
 			pageActions.push(this._pageClick(-iterAngle));
 			page.element.onclick = pageActions[i];
 			
-			//this.add(page);
 			this._pages.push(page);
 			
 			iterAngle += this._rotateAngle;
@@ -45,16 +44,17 @@ class PrismPageSet extends THREE.Group {
 		};
 	}
 	
-	_rotate(angle) {//TODO fix this. Problem with THREE.Group
-		if (this.rotateAction == null) {
-			this.rotateAction = new RotateAction(this._gumaReference, this);
+	_rotate(angle) {
+		for (let entry of this._pages) {
+			if (entry._moveArcAction == null) {
+				entry._moveArcAction = new MoveArcAction(this._gumaReference, entry);
+			}
+			
+			entry._moveArcAction.start(this.position.x, this.position.z, Utils.trimAngle(angle - this._pages[0].rotation.y));
 		}
-		
-		this.rotateAction.start(angle);
 	}
 	
 	get pages() {
-		//return this.children;
 		return this._pages;
 	}
 	

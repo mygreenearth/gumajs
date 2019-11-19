@@ -6,6 +6,8 @@ class GumaPage extends THREE.CSS3DObject {
 		
 		this.element.innerHTML = content;
 		this.element.style.background = 'lightblue';
+		this.element.style.overflowY = 'scroll';
+		this.element.style.padding = '5px';
 		//this.element.onclick = function() { alert('yep!') };
 		
 		this._width = width || 800;

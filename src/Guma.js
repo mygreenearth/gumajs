@@ -38,6 +38,14 @@ class Guma {
         this._onWindowResize();
 	}
 	
+	static getInstance() {
+		if (!Guma.instance) {
+			Guma.instance = new Guma();
+		}
+		
+		return Guma.instance;
+	}
+	
 	addPage(content, width, height, x, y, z) {
 		let page = new GumaPage(this, content, width, height, x, y, z);
 		
@@ -68,21 +76,8 @@ class Guma {
 	}
 	
 	addWindowsSet(pageNames, pageContents, x, y, z, fullPageWidth, fullPageHeight, minPageWidth, minPageHeight) {
-		let windowsSet = new WindowsSet(this, pageNames, pageContents, x, y, z, fullPageWidth, fullPageHeight, minPageWidth, minPageHeight);
-		
-		for (let page of windowsSet.pages) {
-			this._scene.add(page);
-			this._pages.push(page);
-		}
-		
-		for (let menuItem of windowsSet.menu.items) {
-			this._scene.add(menuItem);
-		}
-		
-		let action = new OverspreadAction(this, windowsSet.menu, windowsSet.menu.items);
-		action.start();
-
-		this._scene.add(windowsSet);
+		let windowsSet = new WindowsSet(this);
+		windowsSet.init(pageNames, pageContents, x, y, z, fullPageWidth, fullPageHeight, minPageWidth, minPageHeight);
 		
 		return windowsSet;
 	}
