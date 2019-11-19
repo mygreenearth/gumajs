@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<meta charset="ISO-8859-1">
+	<title>guma.js First Example</title>
+	</head>
+	<body>
+        <script src="../../externals/three.js"></script>
+        <script src="../../externals/CSS3DRenderer.js"></script>
+        <script src="../../build/guma.js"></script>
+        <script>
+        'use strict';
+		let guma = Guma.getInstance();
+		let windowsSet = new WindowsSet(guma);
+
+		window.onload = function() {
+			windowsSet.init(
+				[
+					"Home", "Projects", "Open Tasks", "Our Plans", "Contact Us",
+				],
+				[
+					`<div>
+						<h1>HOME</h1>
+						<p>Welcome to <a href="http://www.mygreen.earth">mygreen.earth!</a></p>
+						<p>This page is dedicated to everybody who wants to participate in any way to help to protect our planet. Our only planet. Let's make out planet green again!</p>
+						<p>Please, see our <a href="#" onclick="windowsSet.clickMenu(1);return false;">Projects</a> or <a href="#" onclick="windowsSet.clickMenu(2);return false;">Our Plans</a> in order to participate.</p>
+						<p>You can also check <a href="#" onclick="windowsSet.clickMenu(3);return false;">Our Future Plans</a> or <a href="#" onclick="windowsSet.clickMenu(4);return false;">Contact US</a> in any case.</p>
+					</div>`,
+					`<div>
+						<h1>PROJECTS</h1>
+						<p>Our core project is <a href="gumajs.org">guma.js</a> which is 3D javascript opensource library in which is this page built.
+						Its source code is located on <a href="https://github.com/mygreenearth/gumajs">GitHub</a>.</p>
+						<p>Our second product is <a href="mygreen.earth">mygreen.earth</a> page itself.</p>
+					</div>`,
+					`<div>
+						<h1>OPEN TASKS</h1>
+						<p>Open Tasks</p>
+					</div>`,
+					`<div>
+						<h1>OUR PLANS</h1>
+						<p>Our Plans</p>
+					</div>`,
+					`<div>
+						<h1>CONTACT US</h1>
+						<p>Contact US</p>
+					</div>`,
+				],
+				0,
+				0,
+				-2000);
+		};
+        </script>
+    </body>
+</html>

@@ -29,12 +29,21 @@ class Guma {
             requestAnimationFrame(animate.bind(this));
             
             //this.controls.update();
-            this.animationManager.update();
             
             this._renderer.render(this._scene, this.camera);
+            
+            this.animationManager.update();
         }
         
         this._onWindowResize();
+	}
+	
+	static getInstance() {
+		if (!Guma.instance) {
+			Guma.instance = new Guma();
+		}
+		
+		return Guma.instance;
 	}
 	
 	addPage(content, width, height, x, y, z) {
@@ -54,7 +63,23 @@ class Guma {
 			this._pages.push(page);
 		}
 		
+		for (let menuItem of prismPageSet.menu.items) {
+			this._scene.add(menuItem);
+		}
+		
+		let action = new OverspreadAction(this, prismPageSet.menu, prismPageSet.menu.items);
+		action.start();
+
+		this._scene.add(prismPageSet);
+		
 		return prismPageSet;
+	}
+	
+	addWindowsSet(pageNames, pageContents, x, y, z, fullPageWidth, fullPageHeight, minPageWidth, minPageHeight) {
+		let windowsSet = new WindowsSet(this);
+		windowsSet.init(pageNames, pageContents, x, y, z, fullPageWidth, fullPageHeight, minPageWidth, minPageHeight);
+		
+		return windowsSet;
 	}
 	
 	_onWindowResize() {

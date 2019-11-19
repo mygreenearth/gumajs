@@ -8,7 +8,7 @@ class GumaMenuItem extends THREE.CSS3DObject {
 		this.position.y = y || 0;
 		this.position.z = z || 0;
 
-		this.element.value = buttonText;
+		this.element.innerHTML = buttonText;
 		this.element.onclick = action;
 	}
 }
