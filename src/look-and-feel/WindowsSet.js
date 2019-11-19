@@ -1,8 +1,11 @@
 class WindowsSet extends THREE.Group {
-	constructor(gumaReference, pageNames, pageContents, x, y, z, fullPageWidth, fullPageHeight, minPageWidth, minPageHeight) {
+	constructor(gumaReference) {
 		super();
 		
 		this._gumaReference = gumaReference;
+	}
+	
+	init(pageNames, pageContents, x, y, z, fullPageWidth, fullPageHeight, minPageWidth, minPageHeight) {
 		this.position.x = x || 0;
 		this.position.y = y || 0;
 		this.position.z = z || 0;
@@ -21,8 +24,8 @@ class WindowsSet extends THREE.Group {
 		
 		this._pages = []; //TODO Three.Group???
 		this._frontPage = null;
+		this._pageActions = [];
 		
-		let pageActions = [];
 		let colIndex = 0;
 		let rowIndex = 0;
 		for (let i = 0; i < pageContents.length; i++) {
@@ -32,8 +35,8 @@ class WindowsSet extends THREE.Group {
 			//let page = new GumaPage(this._gumaReference, pageContents[i], this._pageWidth, this._pageHeight, this.position.x, this.position.y, this.position.z);
 			page.moveTo(this.position.x + x, this.position.y + yIter);
 			
-			pageActions.push(this._pageClick(page, this));
-			page.element.onclick = pageActions[i];
+			this._pageActions.push(this._pageClick(page, this));
+			page.element.onclick = this._pageActions[i];
 			
 			//this.add(page);
 			this._pages.push(page);
@@ -47,22 +50,46 @@ class WindowsSet extends THREE.Group {
 			}
 		}
 
-		this._menu = new GumaMenu(gumaReference, pageNames, /*pages(),*/ pageActions, x, y, z + 1670);
+		this._menu = new GumaMenu(this._gumaReference, pageNames, /*pages(),*/ this._pageActions, x, y, z + 1670);
+		
+		// TODO private members of Guma used here
+		for (let page of this._pages) {
+			this._gumaReference._scene.add(page);
+			this._gumaReference._pages.push(page);
+		}
+		
+		for (let menuItem of this._menu.items) {
+			this._gumaReference._scene.add(menuItem);
+		}
+		
+		let action = new OverspreadAction(this._gumaReference, this._menu, this._menu.items);
+		action.start();
+
+		this._gumaReference._scene.add(this);
+
+	}
+	
+	clickMenu(index) {
+		this._doClick(this._pages[index], this);
 	}
 	
 	_pageClick(page, caller) {
 		return () => {
-			if (!page.inFront) {
-				if (caller._frontPage != null) {
-					caller._frontPage.collapse();
-				}
-				
-				page.popup();
-				caller._frontPage = page;
-			} else {
-				page.collapse();
-			}
+			caller._doClick(page, caller);
 		};
+	}
+	
+	_doClick(page, caller) {
+		if (!page.inFront) {
+			if (caller._frontPage != null) {
+				caller._frontPage.collapse();
+			}
+			
+			page.popup();
+			caller._frontPage = page;
+		} else {
+			page.collapse();
+		}
 	}
 	
 	get pages() {

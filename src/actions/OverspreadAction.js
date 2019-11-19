@@ -12,7 +12,7 @@ class OverspreadAction {
 	
 	_run() {
 		let screenWidth = window.innerWidth;
-		let fullWidth = -4 * this._offset;
+		let fullWidth = -this._offset;
 		let widthPrev = fullWidth;
 	    let lineGroups = [];
 	    let maxWidth = 0;
@@ -72,7 +72,7 @@ class OverspreadAction {
 	            }
 
 	            let action = new MoveAction(this._gumaReference, entry, 4);
-	            action.start(iter, y / 2);
+	            action.start(iter + entry.element.offsetWidth / 2, y / 2);
 	            //entry.position.x = iter;
 	            //entry.position.y = y / 2;
 	    		iter += entry.element.offsetWidth + this._offset;
